@@ -1,12 +1,12 @@
 planner_server:
   ros__parameters:
     expected_planner_frequency: 10.0
-    use_sim_time: False # True
+    use_sim_time: True
     planner_plugins: ["GridBased"]
     GridBased:
       plugin: "nav2_navfn_planner/NavfnPlanner"
       tolerance: 0.5
-      use_astar: false
+      use_astar: true
       allow_unknown: true
 
 global_costmap:
@@ -16,11 +16,12 @@ global_costmap:
       publish_frequency: 1.0
       global_frame: map
       robot_base_frame: robot_base_footprint
-      use_sim_time: False # True
-      robot_radius: 0.15
+      use_sim_time: True
+      robot_radius: 0.25
       resolution: 0.05
       track_unknown_space: true
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
+      filters: ["keepout_filter", "inflation_layer"]
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
         map_subscribe_transient_local: True
@@ -40,6 +41,10 @@ global_costmap:
           obstacle_min_range: 0.0
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 3.0
-        inflation_radius: 0.35
+        cost_scaling_factor: 6.0
+        inflation_radius: 0.45
+      keepout_filter:
+        plugin: "nav2_costmap_2d::KeepoutFilter"
+        enabled: True
+        filter_info_topic: "/costmap_filter_info"
       always_send_full_costmap: True

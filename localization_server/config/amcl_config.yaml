@@ -1,39 +1,128 @@
+# amcl:
+#   ros__parameters:
+#     use_sim_time: True
+#     alpha1: 0.2
+#     alpha2: 0.2
+#     alpha3: 0.2
+#     alpha4: 0.2
+#     alpha5: 0.2
+#     base_frame_id: "robot_base_footprint"
+#     beam_skip_distance: 0.5
+#     beam_skip_error_threshold: 0.9
+#     beam_skip_threshold: 0.3
+#     do_beamskip: false
+#     global_frame_id: "map"
+#     lambda_short: 0.1
+#     laser_likelihood_max_dist: 2.0
+#     laser_max_range: 100.0
+#     laser_min_range: 1.0
+#     laser_model_type: "likelihood_field"
+#     max_beams: 60
+#     max_particles: 8000
+#     min_particles: 200
+#     odom_frame_id: "robot_odom"
+#     pf_err: 0.05
+#     pf_z: 0.99
+#     recovery_alpha_fast: 0.0
+#     recovery_alpha_slow: 0.0
+#     resample_interval: 1
+#     robot_model_type: "differential"
+#     save_pose_rate: 0.5
+#     sigma_hit: 0.2
+#     tf_broadcast: true
+#     transform_tolerance: 1.0
+#     update_min_a: 0.2
+#     update_min_d: 0.25
+#     z_hit: 0.5
+#     z_max: 0.05
+#     z_rand: 0.5
+#     z_short: 0.05
+
 amcl:
   ros__parameters:
-    use_sim_time: True
-    alpha1: 0.2
-    alpha2: 0.2
-    alpha3: 0.2
-    alpha4: 0.2
-    alpha5: 0.2
-    base_frame_id: "robot_base_footprint"
+    use_sim_time: False
+    # Models the error in the rotation of odometry resulting from the rotation of the robot. That is, if the robot turns,
+    # how much of that rotation is erroneously registered as an additional turn?
+    alpha1: 0.1
+
+    # Models the error in the rotation of odometry resulting from the translation of the robot. If the robot moves forward
+    # or backward, how much of that movement is erroneously registered as a rotation?
+    alpha2: 0.1
+
+    # Models the error in the translation of odometry resulting from the translation of the robot. If the robot moves 
+    # forward or backward, how much of that movement is erroneously registered as additional forward or backward movement?
+    alpha3: 0.1
+    
+    # Models the error in the translation of odometry resulting from the rotation of the robot. If the robot turns, 
+    # how much of that turn is erroneously registered as forward or backward movement?
+    alpha4: 0.1
+   
+    # Models the error in translation and rotation for omni-directional robots. This parameter is specific to robots 
+    # that can move in any direction without turning beforehand (also known as holonomic robots).
+    alpha5: 0.0
+
+    # Percentage limit of the amount of error allowed in the laser 
     beam_skip_distance: 0.5
+    # If this happens, beam skip distance will be activated
     beam_skip_error_threshold: 0.9
+    # Percentage of minimum laser readings that should not detect objects
+    # If this happens, beam skip distance will be activated
     beam_skip_threshold: 0.3
+    # Perform a balance of readings
     do_beamskip: false
+    # Base frame from which the position will be calculated
+    base_frame_id: "robot_base_footprint"
+    # Global frame from which localization will be given
     global_frame_id: "map"
+    # Odometry frame id
+    odom_frame_id: "robot_odom"
+    # Used to control the shape of the exponential distribution 
+    # modeling short sensor readings in the AMCL algorithm
     lambda_short: 0.1
     laser_likelihood_max_dist: 2.0
-    laser_max_range: 100.0
-    laser_min_range: -1.0
+
+    laser_max_range: -1.0
+    laser_min_range: 1.0
+    
+    # Laser model to use /likelihood_field /likelihood_field_prob
     laser_model_type: "likelihood_field"
-    max_beams: 60
-    max_particles: 8000
-    min_particles: 200
-    odom_frame_id: "robot_odom"
+    # How many evenly spaced beams in each scan will be used when updating the filter.
+    max_beams: 50
+    # Maximum particles in the particle filter
+    max_particles: 4000
+    # Minimum particles in the particle filter
+    min_particles: 100
+    # Percentage of error in each particle filter resampling
     pf_err: 0.05
+    #
     pf_z: 0.99
+
+    # Test with a real robot
     recovery_alpha_fast: 0.0
     recovery_alpha_slow: 0.0
+
+    # Number of filter updates required before resampling.
     resample_interval: 1
+    # Type of robot drive
     robot_model_type: "differential"
+    # Maximum frequency (Hz) at which to store the last estimated pose and covariance in the parameter server, in the variables 
     save_pose_rate: 0.5
+
     sigma_hit: 0.2
+    # The found transformation by amcl will be published
     tf_broadcast: true
+    # Time with which the published transformation will be timestamped, to indicate that this transformation is valid in the future.
     transform_tolerance: 1.0
+    # Minimum angle that must be traveled to perform a filter update
     update_min_a: 0.2
+    # Minimum distance that must be traveled to perform a filter update
     update_min_d: 0.25
-    z_hit: 0.5
+    #~~~~~~~~~~~~~~~~Parameters for laser modeling~~~~~~~~~
+    # Probability that the sensor measurement is correct
+    z_hit: 0.7
+    # Probability that the laser measurement reaches its maximum
     z_max: 0.05
-    z_rand: 0.5
+    # Probability that the sensor measurement is random
+    z_rand: 0.3
+    # Probability that the laser measurement reaches its minimum
     z_short: 0.05

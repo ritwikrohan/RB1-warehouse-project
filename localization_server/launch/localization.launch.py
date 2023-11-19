@@ -10,7 +10,7 @@ from nav2_common.launch import RewrittenYaml
 def generate_launch_description():
     
     nav2_yaml = os.path.join(get_package_share_directory('localization_server'), 'config', 'amcl_config.yaml')
-    map_file = os.path.join(get_package_share_directory('map_server'), 'config', 'turtlebot_area.yaml')
+    # map_file = os.path.join(get_package_share_directory('map_server'), 'config', 'turtlebot_area.yaml')
 
     use_sim_time_arg = DeclareLaunchArgument("use_sim_time", default_value="True", description="Choose according to the use(True for simulation and False for Robot)")
     use_sim_time_arg_f = LaunchConfiguration('use_sim_time')
@@ -77,7 +77,7 @@ def generate_launch_description():
             parameters=[{'use_sim_time': use_sim_time_arg_f}])
 
     return LaunchDescription([
-        rviz2_node,
+        # rviz2_node,
         robot_state_publisher_node,
         use_sim_time_arg,
         map_type_arg,

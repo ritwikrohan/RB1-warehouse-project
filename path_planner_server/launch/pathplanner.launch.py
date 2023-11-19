@@ -23,7 +23,7 @@ def generate_launch_description():
     bt_navigator_yaml = os.path.join(get_package_share_directory('path_planner_server'), 'config', 'bt.yaml')
     planner_yaml = os.path.join(get_package_share_directory('path_planner_server'), 'config', 'planner_server.yaml')
     recovery_yaml = os.path.join(get_package_share_directory('path_planner_server'), 'config', 'recovery.yaml')
-    
+    filters_yaml = os.path.join(get_package_share_directory('path_planner_server'), 'config', 'filters.yaml')
     rviz_config = os.path.join(get_package_share_directory('path_planner_server'), 'rviz', 'pathplanning.rviz')
 
     controller_server_node_config = RewrittenYaml(
@@ -98,6 +98,22 @@ def generate_launch_description():
         parameters=[{'use_sim_time': use_sim_time}]
     )
 
+    filter_mask = Node(
+        package='nav2_map_server',
+        executable='map_server',
+        name='filter_mask_server',
+        output='screen',
+        emulate_tty=True,
+        parameters=[filters_yaml])
+    
+    costmap_node = Node(
+        package='nav2_map_server',
+        executable='costmap_filter_info_server',
+        name='costmap_filter_info_server',
+        output='screen',
+        emulate_tty=True,
+        parameters=[filters_yaml])
+
     lifecycle_manager_node = Node(
         package='nav2_lifecycle_manager',
         executable='lifecycle_manager',
@@ -107,15 +123,29 @@ def generate_launch_description():
                     {'node_names': ['planner_server',
                                     'controller_server',
                                     'recoveries_server',
-                                    'bt_navigator']}]
+                                    'bt_navigator',
+                                    'filter_mask_server',
+                                    'costmap_filter_info_server']}]
+    )
+
+    approach_service_server = Node(
+        package='attach_shelf',
+        executable='approach_service_server_node',
+        output='screen',
+        name='approach_service_server',
+        emulate_tty=True,
+        
     )
     
     return LaunchDescription([
+        approach_service_server,
         declare_use_sim_time_cmd,
         controller_server_node,
         planner_server_node,
         recoveries_server_node,
         bt_navigator_node,
         rviz2_node,
+        filter_mask,
+        costmap_node,
         lifecycle_manager_node
     ])
