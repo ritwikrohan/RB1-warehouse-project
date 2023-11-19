@@ -150,11 +150,11 @@ class RobotStateMachine(Node):
             elif self.stage_number == 2:
                 self.go_to_pose(self.robot_stage, "loading_stage")
                 self.stage_number = 3
-            # elif self.stage_number==3:
-            #     response = self.send_request(True)
-            #     print(response)
-            #     self.publish_footprint_shelf()
-            #     self.goal_reached=True
+            elif self.stage_number==3:
+                response = self.send_request(True)
+                print(response)
+                self.publish_footprint_shelf()
+                self.goal_reached=True
             
 def main(args=None):
     rclpy.init(args=args)
