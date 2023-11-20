@@ -98,21 +98,35 @@ def generate_launch_description():
         parameters=[{'use_sim_time': use_sim_time}]
     )
 
+    filter_mask_config = RewrittenYaml(
+        source_file=filters_yaml,
+        root_key='',
+        param_rewrites=param_substitutions,
+        convert_types=True
+    )
+
     filter_mask = Node(
         package='nav2_map_server',
         executable='map_server',
         name='filter_mask_server',
         output='screen',
         emulate_tty=True,
-        parameters=[filters_yaml])
-    
+        parameters=[filter_mask_config])
+
+    costmap_node_config = RewrittenYaml(
+        source_file=filters_yaml,
+        root_key='',
+        param_rewrites=param_substitutions,
+        convert_types=True
+    )
+
     costmap_node = Node(
         package='nav2_map_server',
         executable='costmap_filter_info_server',
         name='costmap_filter_info_server',
         output='screen',
         emulate_tty=True,
-        parameters=[filters_yaml])
+        parameters=[costmap_node_config])
 
     lifecycle_manager_node = Node(
         package='nav2_lifecycle_manager',

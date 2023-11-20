@@ -10,6 +10,7 @@ from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
 from math import cos, sin, pi
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
+from std_msgs.msg import Empty
 class RobotStateMachine(Node):
 
 
@@ -25,6 +26,7 @@ class RobotStateMachine(Node):
         self.global_shelf_footprint_publisher = self.create_publisher(Polygon,"/global_costmap/footprint", 10)
         timer_period = 0.5  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
+        self.pub_shelf_down = self.create_publisher(Empty,'/elevator_down',10)
         self.req_to_attach = True
         self.nav = BasicNavigator()
         self.speed_msg = Twist() 
@@ -34,7 +36,8 @@ class RobotStateMachine(Node):
         self.robot_stage = {
             "initial_stage": [0.0, 0.0, 0.0 , 1.0],
             "loading_stage": [5.821, 0.0, -0.7933533, 0.6087614],
-            "final_position": [-3.791, 1.254]}
+            "final_stage": [0.170, -3.131, 0.6087614, 0.7933533],
+            "back_to_initial": [-0.190,0.142 ,-0.1246747,0.9921977]}
         self.stage_number = 1
         self.goal_reached = False
 
@@ -76,7 +79,38 @@ class RobotStateMachine(Node):
             self.local_shelf_footprint_publisher.publish(footprint)
             self.global_shelf_footprint_publisher.publish(footprint)
 
+    def down_shelf(self):
+        # print('Down shelf')
+        msg_pub = Empty()
+        self.pub_shelf_down.publish(msg_pub)
         
+        duration = Duration(seconds=5)
+        rate = self.create_rate(10, self.get_clock())
+        start_time = self.get_clock().now()
+        while rclpy.ok() and (self.get_clock().now() - start_time) < duration:
+            rate.sleep
+
+    def exit_under_the_shelf(self):
+    # publish for fordward
+        msg_vel = Twist()
+        msg_vel.linear.x = 0.1
+        duration = Duration(seconds=7)
+        rate = self.create_rate(10, self.get_clock())
+        start_time = self.get_clock().now()
+        while rclpy.ok() and (self.get_clock().now() - start_time) < duration:
+            msg = Twist()
+            msg.linear.x = 0.1
+            msg.linear.y = 0.0
+            msg.linear.z = 0.0
+            msg.angular.x = 0.0
+            msg.angular.y = 0.0
+            msg.angular.z = 0.0
+            self.publisher_.publish(msg)
+            # print('moving forward')
+            rate.sleep
+        # print('stop')
+        msg.linear.x = 0.0
+        self.publisher_.publish(msg)
 
     def send_request(self, a):
         self.req.attach_to_shelf = a
@@ -112,15 +146,12 @@ class RobotStateMachine(Node):
         while not self.nav.isTaskComplete():
             i = i + 1
             feedback = self.nav.getFeedback()
-            if feedback and i % 5 == 0:
-                print('Estimated time of arrival at ' + stage_name +
-                    ' for worker: ' + '{0:.0f}'.format(
-                        Duration.from_msg(feedback.estimated_time_remaining).nanoseconds / 1e9)
-                    + ' seconds.')
+            if feedback and i % 10 == 0:
+                print('Time left to reach ' + stage_name + ' : ' + '{0:.0f}'.format(Duration.from_msg(feedback.estimated_time_remaining).nanoseconds / 1e9) + ' seconds.')
         
         result = self.nav.getResult()
         if result == TaskResult.SUCCEEDED:
-            print('! Bringing product to shipping destination (' + stage_name + ')...')
+            print('Reached (' + stage_name + ')...')
 
 
         elif result == TaskResult.CANCELED:
@@ -134,6 +165,60 @@ class RobotStateMachine(Node):
 
         while not self.nav.isTaskComplete():
             pass
+
+    def with_cart_backup(self):
+        msg = Twist()
+        duration = Duration(seconds=25)
+        rate = self.create_rate(10, self.get_clock())
+        start_time = self.get_clock().now()
+        while rclpy.ok() and (self.get_clock().now() - start_time) < duration:
+            msg.linear.x = -0.1
+            msg.linear.y = 0.0
+            msg.linear.z = 0.0
+            msg.angular.x = 0.0
+            msg.angular.y = 0.0
+            msg.angular.z = 0.0
+            self.publisher_.publish(msg)
+            # print('moving backward with shelf')
+            rate.sleep
+        # print('stop')
+        msg.linear.x = 0.0
+        self.publisher_.publish(msg)
+        #turn
+        duration = Duration(seconds=7,nanoseconds=500000000)
+        start_time = self.get_clock().now()
+        while rclpy.ok() and (self.get_clock().now() - start_time) < duration:
+            msg = Twist()
+            msg.linear.x = 0.0
+            msg.linear.y = 0.0
+            msg.linear.z = 0.0
+            msg.angular.x = 0.0
+            msg.angular.y = 0.0
+            msg.angular.z = -0.45
+            self.publisher_.publish(msg)
+            # print('turn with shelf')
+            rate.sleep
+        # print('stop')
+        msg.linear.x = 0.1
+        self.publisher_.publish(msg)
+        #forward
+        duration = Duration(seconds=5)
+        start_time = self.get_clock().now()
+        while rclpy.ok() and (self.get_clock().now() - start_time) < duration:
+            msg = Twist()
+            msg.linear.x = 0.1
+            msg.linear.y = 0.0
+            msg.linear.z = 0.0
+            msg.angular.x = 0.0
+            msg.angular.y = 0.0
+            msg.angular.z = 0.0
+            self.publisher_.publish(msg)
+            # print('moving backward with shelf')
+            rate.sleep
+        # print('stop')
+        msg.linear.x = 0.0
+        self.publisher_.publish(msg)
+
 
     def timer_callback(self):
         self.timer.cancel()
@@ -151,10 +236,29 @@ class RobotStateMachine(Node):
                 self.go_to_pose(self.robot_stage, "loading_stage")
                 self.stage_number = 3
             elif self.stage_number==3:
+                print("Loading stage reached and proceeding to attach the cart slowly...")
                 response = self.send_request(True)
-                print(response)
+                # print(response)
                 self.publish_footprint_shelf()
+                self.stage_number=4
+            elif self.stage_number==4:
+                print("Cart attached, Backing up slowly and Proceeding to final stage ...")
+                self.with_cart_backup()
+                self.stage_number=5
+            elif self.stage_number==5:
+                print("Proceeding to final stage...")
+                self.go_to_pose(self.robot_stage, "final_stage")
+                self.stage_number=6
+            elif self.stage_number==6:
+                print("Cart detached and waiting for a few seconds...")
+                self.down_shelf()
+                self.publish_footprint_robot()
+                print("Proceeding back to initial stage ...")
+                self.exit_under_the_shelf()
+                self.go_to_pose(self.robot_stage,"back_to_initial")
+                print("Waiting for next pickup. Robot on standby...")
                 self.goal_reached=True
+
             
 def main(args=None):
     rclpy.init(args=args)
