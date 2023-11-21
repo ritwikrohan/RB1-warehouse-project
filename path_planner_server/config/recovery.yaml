@@ -13,7 +13,7 @@ recoveries_server:
     global_frame: map #robot_odom
     robot_base_frame: robot_base_footprint
     transform_timeout: 0.1
-    use_sim_time: true
+    use_sim_time: false
     simulate_ahead_time: 2.0
     max_rotational_vel: 1.0
     min_rotational_vel: 0.4
