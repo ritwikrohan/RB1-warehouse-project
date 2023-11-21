@@ -1,6 +1,6 @@
 bt_navigator:
   ros__parameters:
-    use_sim_time: False # True
+    use_sim_time: True
     global_frame: map
     robot_base_frame: robot_base_footprint
     odom_topic: /odom

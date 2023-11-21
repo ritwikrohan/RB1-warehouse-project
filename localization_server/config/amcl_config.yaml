@@ -40,7 +40,7 @@
 
 amcl:
   ros__parameters:
-    use_sim_time: False
+    use_sim_time: True
     # Models the error in the rotation of odometry resulting from the rotation of the robot. That is, if the robot turns,
     # how much of that rotation is erroneously registered as an additional turn?
     alpha1: 0.1
