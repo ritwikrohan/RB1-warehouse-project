@@ -8,7 +8,9 @@
 #include "sensor_msgs/msg/detail/laser_scan__struct.hpp"
 #include "sensor_msgs/msg/laser_scan.hpp"
 #include "std_msgs/msg/detail/empty__struct.hpp"
+#include "std_msgs/msg/detail/string__struct.hpp"
 #include "std_msgs/msg/empty.hpp"
+#include "std_msgs/msg/string.hpp"
 #include <cmath>
 #include <functional>
 #include <memory>
@@ -33,7 +35,7 @@ class FinalApproachService : public rclcpp::Node
             rclcpp::SubscriptionOptions options_scan;
             options_scan.callback_group = scan_callback_group_;
             scan_sub_ = this->create_subscription<sensor_msgs::msg::LaserScan>("/scan", 10, std::bind(&FinalApproachService::scanCallback, this, std::placeholders::_1), options_scan);
-            elevator_pub_ = this->create_publisher<std_msgs::msg::Empty>("/elevator_up", 1);
+            elevator_pub_ = this->create_publisher<std_msgs::msg::String>("/elevator_up", 1);
             robot_cmd_vel_publisher = this->create_publisher<geometry_msgs::msg::Twist>("/robot/cmd_vel", 1);
             tf_static_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(this);
             tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
@@ -45,7 +47,7 @@ class FinalApproachService : public rclcpp::Node
 
     private:
         rclcpp::Service<attach_shelf::srv::GoToLoading>::SharedPtr approach_server_;
-        rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr elevator_pub_;
+        rclcpp::Publisher<std_msgs::msg::String>::SharedPtr elevator_pub_;
         rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_sub_;
         std::shared_ptr<tf2_ros::StaticTransformBroadcaster> tf_static_broadcaster_;
         rclcpp::CallbackGroup::SharedPtr scan_callback_group_;
@@ -217,7 +219,8 @@ class FinalApproachService : public rclcpp::Node
                     RCLCPP_INFO(this->get_logger(),"Approaching Shelf and picking it up.");
                     controlLoop();
                     std::this_thread::sleep_for(std::chrono::seconds(2));
-                    auto message = std_msgs::msg::Empty();
+                    auto message = std_msgs::msg::String();
+                    message.data = " ";
                     elevator_pub_->publish(message);
                     res->complete = true;
                 }
