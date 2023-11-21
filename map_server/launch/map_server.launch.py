@@ -10,7 +10,7 @@ def generate_launch_description():
     
     use_sim_time_arg = DeclareLaunchArgument("use_sim_time", default_value="True", description="Choose according to the use(True for simulation and False for Robot)")
     use_sim_time_arg_f = LaunchConfiguration('use_sim_time')
-    map_type_arg = DeclareLaunchArgument("map_file", default_value="warehouse_map_sim.yaml", description="Choose map")
+    map_type_arg = DeclareLaunchArgument("map_file", default_value="warehouse_map_real.yaml", description="Choose map")
     map_type_arg_f = LaunchConfiguration('map_file')
     map_file = PathJoinSubstitution([FindPackageShare('map_server'), 'config', map_type_arg_f])
     rviz_config_dir = os.path.join(get_package_share_directory('map_server'), 'rviz', 'map_display.rviz')
