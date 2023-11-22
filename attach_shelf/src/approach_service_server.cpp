@@ -122,8 +122,8 @@ class FinalApproachService : public rclcpp::Node
             // Create a transform message
             geometry_msgs::msg::TransformStamped broadcast_transformStamped;
             broadcast_transformStamped.header.stamp = this->now();
-            broadcast_transformStamped.header.frame_id = "robot_front_laser_base_link";  // Set the parent frame ID
-            broadcast_transformStamped.child_frame_id = "cart_frame";  // Set the child frame ID
+            broadcast_transformStamped.header.frame_id = "robot_base_footprint";  // Set the parent frame ID
+            broadcast_transformStamped.child_frame_id =  "cart_frame";  // Set the child frame ID
 
             // Set the translation (x, y, z)
             broadcast_transformStamped.transform.translation.x = x;
@@ -147,19 +147,19 @@ class FinalApproachService : public rclcpp::Node
             rclcpp::Rate loop_rate(100);
             while(!final_goal)
             {   
-                publishStaticTransform(this->x, this->y);
-                if ((tf_buffer_->canTransform("robot_base_link", "cart_frame", tf2::TimePoint(), tf2::durationFromSec(0.5)))&& (!std::isinf(this->x)|| !std::isinf(this->y)) && !should_set_final_goal)
+                // publishStaticTransform(this->x, this->y);
+                if ((tf_buffer_->canTransform("robot_base_footprint", "robot_cart_laser", tf2::TimePoint(), tf2::durationFromSec(0.5))) && !should_set_final_goal)
                 {   
                     try {
                         geometry_msgs::msg::TransformStamped transform;
-                        transform = tf_buffer_->lookupTransform("robot_base_link", "cart_frame", tf2::TimePoint(), tf2::durationFromSec(1.0));
+                        transform = tf_buffer_->lookupTransform("robot_base_footprint", "robot_cart_laser", tf2::TimePoint(), tf2::durationFromSec(1.0));
 
                         double error_distance = calculateDistanceError(transform);
                         double error_yaw = calculateYawError(transform);
-                        RCLCPP_DEBUG(this->get_logger(),"error_d : %f", error_distance);
-                        RCLCPP_DEBUG(this->get_logger(),"error_y : %f", error_yaw);
+                        RCLCPP_INFO(this->get_logger(),"error_d : %f", error_distance);
+                        RCLCPP_INFO(this->get_logger(),"error_y : %f", error_yaw);
                         geometry_msgs::msg::Twist twist;
-                        if (error_distance < 0.5 && error_yaw < 0.1){
+                        if (error_distance < 1.0 && error_yaw < 0.1){
                             should_set_final_goal = true;
                         }
                         else{
@@ -178,15 +178,15 @@ class FinalApproachService : public rclcpp::Node
                     // final_goal=true;
                     
                     rclcpp::Time start_time = this->now();
-                    std::chrono::seconds duration(10); // Move for 4 seconds
-                    rclcpp::Rate small(100);
+                    std::chrono::seconds duration(8); // Move for 4 seconds
+                    // rclcpp::Rate small(100);
                     while (rclcpp::ok() && (this->now() - start_time) < duration) {
                         // Your control logic here
                         geometry_msgs::msg::Twist default_twist;
                         default_twist.linear.x = 0.1;  
                         default_twist.angular.z = 0.0;  
                         robot_cmd_vel_publisher->publish(default_twist);
-                        small.sleep();
+                        // small.sleep();
                     }
 
                     // Stop the robot after 3 seconds
@@ -214,21 +214,29 @@ class FinalApproachService : public rclcpp::Node
             bool attach_action = req->attach_to_shelf;
             if (attach_action)
             {
-                if (firstSetLastValue!=0 && secondSetFirstValue!=0)
-                {
-                    RCLCPP_INFO(this->get_logger(),"Approaching Shelf and picking it up.");
-                    controlLoop();
-                    std::this_thread::sleep_for(std::chrono::seconds(2));
-                    auto message = std_msgs::msg::String();
-                    message.data = " ";
-                    elevator_pub_->publish(message);
-                    res->complete = true;
-                }
-                else 
-                {
-                    RCLCPP_INFO(this->get_logger(),"Only one or no leg detected.");
-                    res->complete=false;
-                }
+                // if (firstSetLastValue!=0 && secondSetFirstValue!=0)
+                // {
+                //     RCLCPP_INFO(this->get_logger(),"Approaching Shelf and picking it up.");
+                //     controlLoop();
+                //     std::this_thread::sleep_for(std::chrono::seconds(2));
+                //     // auto message = std_msgs::msg::String();
+                //     // message.data = " ";
+                //     // elevator_pub_->publish(message);
+                //     res->complete = true;
+                // }
+                // else 
+                // {
+                //     RCLCPP_INFO(this->get_logger(),"Only one or no leg detected.");
+                //     res->complete=false;
+                // }
+                RCLCPP_INFO(this->get_logger(),"Approaching Shelf and picking it up.");
+                controlLoop();
+                std::this_thread::sleep_for(std::chrono::seconds(2));
+                auto message = std_msgs::msg::String();
+                message.data = "";
+                elevator_pub_->publish(message);
+                // publishStaticTransform(x, y);
+                res->complete = true;
             }
             else 
             {

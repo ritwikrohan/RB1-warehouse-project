@@ -11,6 +11,7 @@ from math import cos, sin, pi
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from std_msgs.msg import Empty
+from std_msgs.msg import String
 class RobotStateMachine(Node):
 
 
@@ -26,7 +27,7 @@ class RobotStateMachine(Node):
         self.global_shelf_footprint_publisher = self.create_publisher(Polygon,"/global_costmap/footprint", 10)
         timer_period = 0.5  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
-        self.pub_shelf_down = self.create_publisher(Empty,'/elevator_down',10)
+        self.pub_shelf_down = self.create_publisher(String,'/elevator_down',10)
         self.req_to_attach = True
         self.nav = BasicNavigator()
         self.speed_msg = Twist() 
@@ -34,12 +35,12 @@ class RobotStateMachine(Node):
         self.goal_pose = PoseStamped()
         self.footprint = Polygon()
         self.robot_stage = {
-            "initial_stage": [0.0, 0.0, 0.0 , 1.0],
-            "loading_stage": [5.821, 0.0, -0.7933533, 0.6087614],
-            "final_stage": [0.170, -3.131, 0.6087614, 0.7933533],
-            "back_to_initial": [-0.190,0.142 ,-0.1246747,0.9921977]}
+            "initial_stage": [-0.279, 0.214, 0.0 , 1.0],
+            "loading_stage": [4.1, -0.214, -0.7071068, 0.7071068],           
+            "final_stage": [-0.297, -2.641, -0.662, 0.749],
+            "back_to_initial": [-0.3,0.279 ,-0.1246747,0.9921977]}
         self.stage_number = 1
-        self.goal_reached = False
+        self.goal_reached = False #3.956
 
     def publish_footprint_shelf(self):
 
@@ -81,9 +82,17 @@ class RobotStateMachine(Node):
 
     def down_shelf(self):
         # print('Down shelf')
-        msg_pub = Empty()
+        msg_pub = String()
+        msg_pub.data = ''
         self.pub_shelf_down.publish(msg_pub)
         
+        duration = Duration(seconds=7)
+        rate = self.create_rate(10, self.get_clock())
+        start_time = self.get_clock().now()
+        while rclpy.ok() and (self.get_clock().now() - start_time) < duration:
+            rate.sleep
+
+    def wait(self):
         duration = Duration(seconds=5)
         rate = self.create_rate(10, self.get_clock())
         start_time = self.get_clock().now()
@@ -99,7 +108,7 @@ class RobotStateMachine(Node):
         start_time = self.get_clock().now()
         while rclpy.ok() and (self.get_clock().now() - start_time) < duration:
             msg = Twist()
-            msg.linear.x = 0.1
+            msg.linear.x = -0.1
             msg.linear.y = 0.0
             msg.linear.z = 0.0
             msg.angular.x = 0.0
@@ -168,7 +177,7 @@ class RobotStateMachine(Node):
 
     def with_cart_backup(self):
         msg = Twist()
-        duration = Duration(seconds=25)
+        duration = Duration(seconds=14)
         rate = self.create_rate(10, self.get_clock())
         start_time = self.get_clock().now()
         while rclpy.ok() and (self.get_clock().now() - start_time) < duration:
@@ -185,7 +194,7 @@ class RobotStateMachine(Node):
         msg.linear.x = 0.0
         self.publisher_.publish(msg)
         #turn
-        duration = Duration(seconds=7,nanoseconds=500000000)
+        duration = Duration(seconds=3,nanoseconds=500000000)
         start_time = self.get_clock().now()
         while rclpy.ok() and (self.get_clock().now() - start_time) < duration:
             msg = Twist()
@@ -230,7 +239,6 @@ class RobotStateMachine(Node):
             if self.stage_number == 1:
                 self.set_init_pose()
                 self.stage_number = 2
-                # self.goal_reached=True
                 
             elif self.stage_number == 2:
                 self.go_to_pose(self.robot_stage, "loading_stage")
@@ -238,21 +246,25 @@ class RobotStateMachine(Node):
             elif self.stage_number==3:
                 print("Loading stage reached and proceeding to attach the cart slowly...")
                 response = self.send_request(True)
+                self.wait()
                 # print(response)
                 self.publish_footprint_shelf()
+                print("Footprint Changed")
                 self.stage_number=4
+                print("Reached Underneath the cart. Ready for elevator up...")
             elif self.stage_number==4:
                 print("Cart attached, Backing up slowly and Proceeding to final stage ...")
                 self.with_cart_backup()
                 self.stage_number=5
             elif self.stage_number==5:
-                print("Proceeding to final stage...")
+                print("Proceeding to final stage with shelf...")
                 self.go_to_pose(self.robot_stage, "final_stage")
                 self.stage_number=6
             elif self.stage_number==6:
-                print("Cart detached and waiting for a few seconds...")
+                print("Cart getting detached and waiting for a few seconds...")
                 self.down_shelf()
                 self.publish_footprint_robot()
+                print("Footprint back to original state")
                 print("Proceeding back to initial stage ...")
                 self.exit_under_the_shelf()
                 self.go_to_pose(self.robot_stage,"back_to_initial")
